@@ -1,0 +1,80 @@
+#kommentar-panel {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 320px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  font-family: sans-serif;
+  font-size: 14px;
+  z-index: 999999;
+  padding: 12px;
+  color: #333;
+}
+
+#kommentar-panel h3 {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: #888;
+  font-weight: normal;
+}
+
+#kommentar-url {
+  font-size: 11px;
+  color: #555;
+  word-break: break-all;
+  background: #f5f5f5;
+  padding: 4px 6px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+#kommentar-liste {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+}
+
+.kommentar-eintrag {
+  background: #f9f9f9;
+  border-left: 3px solid #ccc;
+  padding: 6px 8px;
+  margin-bottom: 6px;
+  border-radius: 0 4px 4px 0;
+  font-size: 13px;
+}
+
+.kommentar-eintrag .meta {
+  font-size: 10px;
+  color: #aaa;
+  margin-bottom: 2px;
+}
+
+#kommentar-eingabe {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 6px;
+  font-size: 13px;
+  resize: none;
+  font-family: sans-serif;
+}
+
+#kommentar-senden {
+  margin-top: 6px;
+  width: 100%;
+  padding: 7px;
+  background: #555;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+#kommentar-senden:hover {
+  background: #333;
+}
