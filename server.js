@@ -1,18 +1,24 @@
 const express = require('express');
-const Database = require('better-sqlite3');
+const { Pool } = require('pg');
 
 const app = express();
-const db = new Database('kommentare.db');
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS kommentare (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    url TEXT NOT NULL,
-    text TEXT NOT NULL,
-    anon_id TEXT NOT NULL,
-    erstellt_am DATETIME DEFAULT CURRENT_TIMESTAMP
-  )
-`);
+async function initDb() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS kommentare (
+      id SERIAL PRIMARY KEY,
+      url TEXT NOT NULL,
+      text TEXT NOT NULL,
+      anon_id TEXT NOT NULL,
+      erstellt_am TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+}
+initDb();
 
 app.use(express.json());
 
@@ -22,7 +28,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Rate-Limiting: max 5 Kommentare pro IP pro Minute
 const rateLimits = {};
 function rateLimit(ip) {
   const jetzt = Date.now();
@@ -33,7 +38,6 @@ function rateLimit(ip) {
   return true;
 }
 
-// XSS-Schutz: HTML escapen
 function escapeHtml(text) {
   return text
     .replace(/&/g, '&amp;')
@@ -43,16 +47,19 @@ function escapeHtml(text) {
     .replace(/'/g, '&#039;');
 }
 
-app.get('/kommentare', (req, res) => {
+app.get('/kommentare', async (req, res) => {
   const { url } = req.query;
   if (!url) return res.status(400).json({ fehler: 'URL fehlt' });
-  const rows = db.prepare('SELECT * FROM kommentare WHERE url = ? ORDER BY erstellt_am ASC').all(url);
-  res.json(rows);
+  const result = await pool.query(
+    'SELECT * FROM kommentare WHERE url = $1 ORDER BY erstellt_am ASC',
+    [url]
+  );
+  res.json(result.rows);
 });
 
-app.post('/kommentare', (req, res) => {
+app.post('/kommentare', async (req, res) => {
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-  
+
   if (!rateLimit(ip)) {
     return res.status(429).json({ fehler: 'Zu viele Kommentare, bitte warte kurz.' });
   }
@@ -60,16 +67,17 @@ app.post('/kommentare', (req, res) => {
   let { url, text, anon_id } = req.body;
   if (!url || !text || !anon_id) return res.status(400).json({ fehler: 'Felder fehlen' });
 
-  // Länge begrenzen
   if (text.length > 500) return res.status(400).json({ fehler: 'Kommentar zu lang (max 500 Zeichen)' });
   if (url.length > 500) return res.status(400).json({ fehler: 'URL zu lang' });
 
-  // HTML escapen
   text = escapeHtml(text);
   anon_id = escapeHtml(anon_id);
 
-  const result = db.prepare('INSERT INTO kommentare (url, text, anon_id) VALUES (?, ?, ?)').run(url, text, anon_id);
-  res.json({ id: result.lastInsertRowid });
+  const result = await pool.query(
+    'INSERT INTO kommentare (url, text, anon_id) VALUES ($1, $2, $3) RETURNING id',
+    [url, text, anon_id]
+  );
+  res.json({ id: result.rows[0].id });
 });
 
 app.listen(3000, () => {
