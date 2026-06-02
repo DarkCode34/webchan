@@ -1,4 +1,4 @@
-const SERVER = 'http://localhost:3000';
+const SERVER = 'https://webchan-9w51.onrender.com';
 
 function normalisiereUrl(url) {
   try {
