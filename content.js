@@ -58,12 +58,17 @@ async function kommentareLaden() {
 button.addEventListener('click', async () => {
   const text = eingabe.value.trim();
   if (!text) return;
+  if (text.length > 500) {
+    alert('Kommentar zu lang! Maximum 500 Zeichen.');
+    return;
+  }
   eingabe.value = '';
-  await browser.runtime.sendMessage({
+  const res = await browser.runtime.sendMessage({
     typ: 'POST',
     url: `${SERVER}/kommentare`,
     body: { url: aktuelleUrl, text, anon_id: anonId }
   });
+  if (!res.ok) alert('Fehler: ' + (res.fehler || 'Unbekannter Fehler'));
   kommentareLaden();
 });
 
