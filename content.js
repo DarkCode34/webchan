@@ -11,6 +11,13 @@ function normalisiereUrl(url) {
   }
 }
 
+// Toggle Button
+const toggle = document.createElement('button');
+toggle.id = 'kommentar-toggle';
+toggle.textContent = '💬';
+document.body.appendChild(toggle);
+
+// Panel
 const panel = document.createElement('div');
 panel.id = 'kommentar-panel';
 panel.innerHTML = `
@@ -27,6 +34,16 @@ const eingabe = document.getElementById('kommentar-eingabe');
 const button = document.getElementById('kommentar-senden');
 const aktuelleUrl = normalisiereUrl(window.location.href);
 const anonId = 'Anon-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+
+toggle.addEventListener('click', () => {
+  panel.classList.toggle('offen');
+  if (panel.classList.contains('offen')) {
+    toggle.textContent = '✕';
+    kommentareLaden();
+  } else {
+    toggle.textContent = '💬';
+  }
+});
 
 function kommentarAnzeigen(kommentare) {
   liste.innerHTML = '';
@@ -78,6 +95,3 @@ eingabe.addEventListener('keydown', (e) => {
     button.click();
   }
 });
-
-kommentareLaden();
-setInterval(kommentareLaden, 10000);
