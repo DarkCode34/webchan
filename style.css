@@ -1,6 +1,26 @@
-#kommentar-panel {
+#kommentar-toggle {
   position: fixed;
   bottom: 20px;
+  right: 20px;
+  width: 48px;
+  height: 48px;
+  background: #555;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 22px;
+  cursor: pointer;
+  z-index: 999999;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+#kommentar-toggle:hover {
+  background: #333;
+}
+
+#kommentar-panel {
+  position: fixed;
+  bottom: 80px;
   right: 20px;
   width: 320px;
   background: white;
@@ -12,6 +32,11 @@
   z-index: 999999;
   padding: 12px;
   color: #333;
+  display: none;
+}
+
+#kommentar-panel.offen {
+  display: block;
 }
 
 #kommentar-panel h3 {
