@@ -33,7 +33,6 @@ const liste = document.getElementById('kommentar-liste');
 const eingabe = document.getElementById('kommentar-eingabe');
 const button = document.getElementById('kommentar-senden');
 const aktuelleUrl = normalisiereUrl(window.location.href);
-const anonId = 'Anon-' + Math.random().toString(36).slice(2, 6).toUpperCase();
 
 let aktiverParent = null;
 
@@ -60,7 +59,6 @@ function kommentarHtml(k, eingerueckt = false) {
     <div class="antwort-btn" data-id="${k.id}">↩ Antworten</div>
   `;
 
-  // Upvote
   div.querySelector('.upvote-btn').addEventListener('click', async () => {
     const res = await browser.runtime.sendMessage({
       typ: 'PUT',
@@ -69,12 +67,10 @@ function kommentarHtml(k, eingerueckt = false) {
     if (res.ok) div.querySelector('.upvote-btn').textContent = `▲ ${res.daten.upvotes}`;
   });
 
-  // Antworten
   div.querySelector('.antwort-btn').addEventListener('click', () => {
     aktiverParent = k.id;
     eingabe.placeholder = `Antwort an ${k.anon_id}...`;
     eingabe.focus();
-    document.getElementById('kommentar-formular').dataset.parent = k.id;
   });
 
   return div;
@@ -117,7 +113,7 @@ button.addEventListener('click', async () => {
   await browser.runtime.sendMessage({
     typ: 'POST',
     url: `${SERVER}/kommentare`,
-    body: { url: aktuelleUrl, text, anon_id: anonId, parent_id: aktiverParent }
+    body: { url: aktuelleUrl, text, parent_id: aktiverParent }
   });
 
   aktiverParent = null;
@@ -129,10 +125,6 @@ eingabe.addEventListener('keydown', (e) => {
     e.preventDefault();
     button.click();
   }
-});
-
-// Escape bricht Antwort-Modus ab
-eingabe.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     aktiverParent = null;
     eingabe.placeholder = 'Kommentar schreiben...';
