@@ -13,6 +13,14 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
       .then(r => r.json())
       .then(daten => sendResponse({ ok: true, daten }))
       .catch(() => sendResponse({ ok: false }));
+  } else if (request.typ === 'PUT') {
+    fetch(request.url, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' }
+    })
+      .then(r => r.json())
+      .then(daten => sendResponse({ ok: true, daten }))
+      .catch(() => sendResponse({ ok: false }));
   }
-  return true; // wichtig für async
+  return true;
 });
