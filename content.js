@@ -11,21 +11,21 @@ function normalisiereUrl(url) {
   }
 }
 
-// Toggle Button
 const toggle = document.createElement('button');
 toggle.id = 'kommentar-toggle';
 toggle.textContent = '💬';
 document.body.appendChild(toggle);
 
-// Panel
 const panel = document.createElement('div');
 panel.id = 'kommentar-panel';
 panel.innerHTML = `
   <h3>💬 Kommentare</h3>
   <div id="kommentar-url">${normalisiereUrl(window.location.href)}</div>
   <div id="kommentar-liste"><p style="color:#bbb; font-size:12px;">Lade Kommentare...</p></div>
-  <textarea id="kommentar-eingabe" rows="3" placeholder="Kommentar schreiben..."></textarea>
-  <button id="kommentar-senden">Absenden</button>
+  <div id="kommentar-formular">
+    <textarea id="kommentar-eingabe" rows="3" placeholder="Kommentar schreiben..."></textarea>
+    <button id="kommentar-senden">Absenden</button>
+  </div>
 `;
 document.body.appendChild(panel);
 
@@ -35,15 +35,50 @@ const button = document.getElementById('kommentar-senden');
 const aktuelleUrl = normalisiereUrl(window.location.href);
 const anonId = 'Anon-' + Math.random().toString(36).slice(2, 6).toUpperCase();
 
+let aktiverParent = null;
+
 toggle.addEventListener('click', () => {
   panel.classList.toggle('offen');
-  if (panel.classList.contains('offen')) {
-    toggle.textContent = '✕';
-    kommentareLaden();
-  } else {
-    toggle.textContent = '💬';
-  }
+  toggle.textContent = panel.classList.contains('offen') ? '✕' : '💬';
+  if (panel.classList.contains('offen')) kommentareLaden();
 });
+
+function zeitAnzeigen(datum) {
+  return new Date(datum).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+}
+
+function kommentarHtml(k, eingerueckt = false) {
+  const div = document.createElement('div');
+  div.className = 'kommentar-eintrag' + (eingerueckt ? ' antwort' : '');
+  div.innerHTML = `
+    <div class="meta">
+      <span class="anon-id">${k.anon_id}</span>
+      <span class="zeit">· ${zeitAnzeigen(k.erstellt_am)}</span>
+      <span class="upvote-btn" data-id="${k.id}">▲ ${k.upvotes}</span>
+    </div>
+    <div class="kommentar-text">${k.text}</div>
+    <div class="antwort-btn" data-id="${k.id}">↩ Antworten</div>
+  `;
+
+  // Upvote
+  div.querySelector('.upvote-btn').addEventListener('click', async () => {
+    const res = await browser.runtime.sendMessage({
+      typ: 'PUT',
+      url: `${SERVER}/kommentare/${k.id}/upvote`
+    });
+    if (res.ok) div.querySelector('.upvote-btn').textContent = `▲ ${res.daten.upvotes}`;
+  });
+
+  // Antworten
+  div.querySelector('.antwort-btn').addEventListener('click', () => {
+    aktiverParent = k.id;
+    eingabe.placeholder = `Antwort an ${k.anon_id}...`;
+    eingabe.focus();
+    document.getElementById('kommentar-formular').dataset.parent = k.id;
+  });
+
+  return div;
+}
 
 function kommentarAnzeigen(kommentare) {
   liste.innerHTML = '';
@@ -52,13 +87,10 @@ function kommentarAnzeigen(kommentare) {
     return;
   }
   kommentare.forEach(k => {
-    const eintrag = document.createElement('div');
-    eintrag.className = 'kommentar-eintrag';
-    eintrag.innerHTML = `
-      <div class="meta">${k.anon_id} · ${new Date(k.erstellt_am).toLocaleTimeString()}</div>
-      <div>${k.text}</div>
-    `;
-    liste.appendChild(eintrag);
+    liste.appendChild(kommentarHtml(k, false));
+    if (k.antworten && k.antworten.length > 0) {
+      k.antworten.forEach(a => liste.appendChild(kommentarHtml(a, true)));
+    }
   });
   liste.scrollTop = liste.scrollHeight;
 }
@@ -80,12 +112,15 @@ button.addEventListener('click', async () => {
     return;
   }
   eingabe.value = '';
-  const res = await browser.runtime.sendMessage({
+  eingabe.placeholder = 'Kommentar schreiben...';
+
+  await browser.runtime.sendMessage({
     typ: 'POST',
     url: `${SERVER}/kommentare`,
-    body: { url: aktuelleUrl, text, anon_id: anonId }
+    body: { url: aktuelleUrl, text, anon_id: anonId, parent_id: aktiverParent }
   });
-  if (!res.ok) alert('Fehler: ' + (res.fehler || 'Unbekannter Fehler'));
+
+  aktiverParent = null;
   kommentareLaden();
 });
 
@@ -95,3 +130,14 @@ eingabe.addEventListener('keydown', (e) => {
     button.click();
   }
 });
+
+// Escape bricht Antwort-Modus ab
+eingabe.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    aktiverParent = null;
+    eingabe.placeholder = 'Kommentar schreiben...';
+  }
+});
+
+kommentareLaden();
+setInterval(kommentareLaden, 10000);
