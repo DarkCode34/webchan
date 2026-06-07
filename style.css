@@ -57,7 +57,7 @@
 }
 
 #kommentar-liste {
-  max-height: 200px;
+  max-height: 220px;
   overflow-y: auto;
   margin-bottom: 10px;
 }
@@ -71,10 +71,49 @@
   font-size: 13px;
 }
 
-.kommentar-eintrag .meta {
+.kommentar-eintrag.antwort {
+  margin-left: 16px;
+  border-left-color: #aaa;
+  background: #f0f0f0;
+}
+
+.meta {
   font-size: 10px;
   color: #aaa;
-  margin-bottom: 2px;
+  margin-bottom: 3px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.anon-id {
+  color: #888;
+  font-weight: bold;
+}
+
+.upvote-btn {
+  cursor: pointer;
+  color: #888;
+  margin-left: auto;
+}
+
+.upvote-btn:hover {
+  color: #e67e22;
+}
+
+.antwort-btn {
+  font-size: 10px;
+  color: #aaa;
+  cursor: pointer;
+  margin-top: 3px;
+}
+
+.antwort-btn:hover {
+  color: #555;
+}
+
+.kommentar-text {
+  margin: 2px 0;
 }
 
 #kommentar-eingabe {
