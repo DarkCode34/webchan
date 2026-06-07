@@ -50,7 +50,6 @@ function escapeHtml(text) {
     .replace(/'/g, '&#039;');
 }
 
-// Kommentare als Baum strukturieren
 function baumeStruktur(rows) {
   const map = {};
   const roots = [];
@@ -81,20 +80,21 @@ app.post('/kommentare', async (req, res) => {
     return res.status(429).json({ fehler: 'Zu viele Kommentare, bitte warte kurz.' });
   }
 
-  let { url, text, anon_id, parent_id } = req.body;
-  if (!url || !text || !anon_id) return res.status(400).json({ fehler: 'Felder fehlen' });
+  let { url, text, parent_id } = req.body;
+  if (!url || !text) return res.status(400).json({ fehler: 'Felder fehlen' });
   if (text.length > 500) return res.status(400).json({ fehler: 'Kommentar zu lang (max 500 Zeichen)' });
   if (url.length > 500) return res.status(400).json({ fehler: 'URL zu lang' });
 
   text = escapeHtml(text);
-  anon_id = escapeHtml(anon_id);
   parent_id = parent_id ? parseInt(parent_id) : null;
 
+  const anon_id = 'Anon-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+
   const result = await pool.query(
-    'INSERT INTO kommentare (url, text, anon_id, parent_id) VALUES ($1, $2, $3, $4) RETURNING id',
+    'INSERT INTO kommentare (url, text, anon_id, parent_id) VALUES ($1, $2, $3, $4) RETURNING id, anon_id',
     [url, text, anon_id, parent_id]
   );
-  res.json({ id: result.rows[0].id });
+  res.json({ id: result.rows[0].id, anon_id: result.rows[0].anon_id });
 });
 
 app.put('/kommentare/:id/upvote', async (req, res) => {
