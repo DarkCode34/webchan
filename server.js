@@ -14,6 +14,8 @@ async function initDb() {
       url TEXT NOT NULL,
       text TEXT NOT NULL,
       anon_id TEXT NOT NULL,
+      parent_id INTEGER REFERENCES kommentare(id) ON DELETE CASCADE,
+      upvotes INTEGER DEFAULT 0,
       erstellt_am TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -25,6 +27,7 @@ app.use(express.json());
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 'Content-Type');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT');
   next();
 });
 
@@ -47,6 +50,21 @@ function escapeHtml(text) {
     .replace(/'/g, '&#039;');
 }
 
+// Kommentare als Baum strukturieren
+function baumeStruktur(rows) {
+  const map = {};
+  const roots = [];
+  rows.forEach(r => map[r.id] = { ...r, antworten: [] });
+  rows.forEach(r => {
+    if (r.parent_id && map[r.parent_id]) {
+      map[r.parent_id].antworten.push(map[r.id]);
+    } else {
+      roots.push(map[r.id]);
+    }
+  });
+  return roots;
+}
+
 app.get('/kommentare', async (req, res) => {
   const { url } = req.query;
   if (!url) return res.status(400).json({ fehler: 'URL fehlt' });
@@ -54,30 +72,39 @@ app.get('/kommentare', async (req, res) => {
     'SELECT * FROM kommentare WHERE url = $1 ORDER BY erstellt_am ASC',
     [url]
   );
-  res.json(result.rows);
+  res.json(baumeStruktur(result.rows));
 });
 
 app.post('/kommentare', async (req, res) => {
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-
   if (!rateLimit(ip)) {
     return res.status(429).json({ fehler: 'Zu viele Kommentare, bitte warte kurz.' });
   }
 
-  let { url, text, anon_id } = req.body;
+  let { url, text, anon_id, parent_id } = req.body;
   if (!url || !text || !anon_id) return res.status(400).json({ fehler: 'Felder fehlen' });
-
   if (text.length > 500) return res.status(400).json({ fehler: 'Kommentar zu lang (max 500 Zeichen)' });
   if (url.length > 500) return res.status(400).json({ fehler: 'URL zu lang' });
 
   text = escapeHtml(text);
   anon_id = escapeHtml(anon_id);
+  parent_id = parent_id ? parseInt(parent_id) : null;
 
   const result = await pool.query(
-    'INSERT INTO kommentare (url, text, anon_id) VALUES ($1, $2, $3) RETURNING id',
-    [url, text, anon_id]
+    'INSERT INTO kommentare (url, text, anon_id, parent_id) VALUES ($1, $2, $3, $4) RETURNING id',
+    [url, text, anon_id, parent_id]
   );
   res.json({ id: result.rows[0].id });
+});
+
+app.put('/kommentare/:id/upvote', async (req, res) => {
+  const { id } = req.params;
+  const result = await pool.query(
+    'UPDATE kommentare SET upvotes = upvotes + 1 WHERE id = $1 RETURNING upvotes',
+    [id]
+  );
+  if (result.rows.length === 0) return res.status(404).json({ fehler: 'Kommentar nicht gefunden' });
+  res.json({ upvotes: result.rows[0].upvotes });
 });
 
 app.listen(3000, () => {
