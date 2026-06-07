@@ -1,11 +1,18 @@
 {
   "manifest_version": 2,
-  "name": "Kommentare",
-  "version": "0.1",
-  "description": "Anonyme Kommentare für Webseiten",
+  "name": "WebChan",
+  "version": "0.1.0",
+  "description": "Anonyme Kommentare für jede Webseite im Imageboard-Stil.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "webchan@darkcode34",
+      "strict_min_version": "109.0"
+    }
+  },
   "permissions": [
     "activeTab",
-    "http://localhost:3000/*"
+    "http://localhost:3000/*",
+    "https://webchan-9w51.onrender.com/*"
   ],
   "background": {
     "scripts": ["background.js"]
@@ -16,5 +23,9 @@
       "js": ["content.js"],
       "css": ["style.css"]
     }
-  ]
+  ],
+  "icons": {
+    "48": "icon48.png",
+    "96": "icon96.png"
+  }
 }
